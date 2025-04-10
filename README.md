@@ -86,4 +86,4 @@ Beiträge sind willkommen! Bitte sende einen Pull Request, um Änderungen vorzus
 
 ## Lizenz
 
-[Füge hier die Lizenz ein]
+GNU General Public License v3.0
