@@ -1,0 +1,65 @@
+# ESPHome-Konfiguration für Toshiba/Carrier HVAC
+
+esphome:
+  name: toshiba_hvac_controller
+  platform: esp32
+  board: esp32dev
+
+# Enable logging
+logger:
+  level: INFO
+
+# Enable Home Assistant API
+api:
+  password: your_api_password
+
+# Enable OTA updates
+ota:
+  password: your_ota_password
+
+wifi:
+  ssid: "Dein_WLAN_SSID"
+  password: "Dein_WLAN_Passwort"
+
+# Define the pins connected to the Toshiba/Carrier HVAC interface
+uart:
+  id: hvac_uart
+  tx_pin: GPIO16
+  rx_pin: GPIO17
+  baud_rate: 9600  # Standard-Baudrate für Toshiba, ggf. anpassen
+  stop_bits: 1
+  parity: NONE
+
+# External Component für Toshiba HVAC
+external_components:
+  - source:
+      type: git
+      url: https://github.com/martin-at-schorsch/esphome-toshiba-hvac  # Ersetze durch dein Repository!
+    components: 
+      - toshiba_hvac  # Name der Komponente
+
+# climate Komponente
+climate:
+  - platform: toshiba_hvac # Verwende die Plattform der externen Komponente
+    name: "Toshiba HVAC"
+    #custom_climate_id: toshiba_hvac # Entfernt, da es in external component nicht benötigt wird.
+    uart_id: hvac_uart # Referenz zur UART-Konfiguration
+    
+    supported_modes:
+      - "off"
+      - "heat"
+      - "cool"
+      - "auto"
+      - "dry"
+      - "fan_only"
+    supported_fan_modes:
+      - "auto"
+      - "low"
+      - "medium"
+      - "high"
+      - "silent"
+    default_temperature: 22 °C
+    visual:
+      temperature_step: 1 °C
+    
+
