@@ -105,7 +105,7 @@ void LilygoT547Display::flush_screen_changes() {
 
   epd_poweron();
   delay(50); // Ensure PMIC ready
-  err = epd_hl_update_screen(&hl, MODE_GC16, this->temperature_);
+  err = epd_hl_update_screen(&hl, MODE_GL16, this->temperature_);
   ESP_LOGI(TAG, "Update finished. Err: %d", err);
   if (this->power_off_delay_enabled_ == true) {
     delay(700);

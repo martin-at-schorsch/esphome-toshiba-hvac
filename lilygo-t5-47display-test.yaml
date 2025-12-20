@@ -1,0 +1,96 @@
+esphome:
+  name: lilygo-t5-47display-test
+  
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+psram:
+  mode: quad
+  speed: 40MHz
+
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+ota:
+  - platform: esphome  
+    password: !secret ota_password
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+#mqtt:
+#  broker: !secret mqtt_host
+#  username: !secret mqtt_username
+#  password: !secret mqtt_password
+
+
+external_components:
+  - source:
+      type: local
+      path: components
+    components: [lilygo_t5_47_display]
+
+logger:
+  level: DEBUG
+
+font:
+  - file: "gfonts://Source Sans Pro"
+    id: font_main
+    size: 40
+
+
+  # https://pictogrammers.github.io/@mdi/font/5.3.45/
+  - file: 'fonts/materialdesignicons-webfont.ttf'
+    id: font_icons
+    size: 160
+    glyphs:
+      - "\U000F0594" # clear-night
+      - "\U000F0590" # cloudy
+      - "\U000F0595" # partlycloudy
+      - "\U000F0591" # fog      
+      - "\U000F0592" # hail
+      - "\U000F0593" # lightning
+      - "\U000F067E" # lightning-rainy
+      - "\U000F0596" # pouring
+      - "\U000F0597" # rainy
+      - "\U000F0F36" # snowy
+      - "\U000F067F" # snowy-rainy
+      - "\U000F0599" # sunny
+      - "\U000F059D" # windy
+      - "\U000F059E" # windy-variant
+      - "\U000F0F38" # exceptional
+
+display:
+  - platform: lilygo_t5_47_display
+    id: t5_display
+    #rotation: 270
+    full_update_every: 1
+    power_off_delay_enabled: false
+    update_interval: 30s # fast updates to see it working
+    lambda: |-
+      ESP_LOGI("display_lambda", "Lambda is running!");
+      
+      // Border
+      //it.rectangle(1, 1, 960-2, 540-2, Color::BLACK);
+
+      //it.filled_rectangle(1, 1, 100, 540, Color::WHITE);
+      
+      //it.filled_rectangle(100, 1, 200, 540, Color::BLACK);
+      //it.filled_rectangle(300, 1, 400, 540);
+
+      //it.filled_rectangle(500, 1, 700, 540, Color::BLACK);
+
+      // Text
+      it.print(180, 50, id(font_main), Color::BLACK, "Hello World!");
+      it.print(180, 100, id(font_main), Color::WHITE, "LilyGo T5-4.7");
+      
+      it.print(180, 150, id(font_main), Color::BLACK, "Test Default Color");
+
+      // Icons
+      it.printf(180, 300, id(font_icons), Color::BLACK, "\U000F0595"); // mdi-weather-cloudy
+      it.printf(300, 300, id(font_icons), Color::WHITE, "\U000F0593"); // mdi-weather-cloudy
