@@ -69,28 +69,34 @@ display:
   - platform: lilygo_t5_47_display
     id: t5_display
     #rotation: 270
-    full_update_every: 1
+    full_update_every: 5
     power_off_delay_enabled: false
-    update_interval: 30s # fast updates to see it working
+    update_interval: 10s # fast updates to see it working
     lambda: |-
       ESP_LOGI("display_lambda", "Lambda is running!");
       
+      it.filled_rectangle(960/2, 1, 960, 540, Color::BLACK); // make right side black
+
+
       // Border
       //it.rectangle(1, 1, 960-2, 540-2, Color::BLACK);
 
       //it.filled_rectangle(1, 1, 100, 540, Color::WHITE);
       
       //it.filled_rectangle(100, 1, 200, 540, Color::BLACK);
-      //it.filled_rectangle(300, 1, 400, 540);
+
 
       //it.filled_rectangle(500, 1, 700, 540, Color::BLACK);
 
       // Text
-      it.print(180, 50, id(font_main), Color::BLACK, "Hello World!");
-      it.print(180, 100, id(font_main), Color::WHITE, "LilyGo T5-4.7");
+      it.print(960/2-100, 0, id(font_main),  Color::BLACK, "Hello World!");
+      it.print(960/2-100, 50, id(font_main),  Color::WHITE, "LilyGo T5-4.7");
       
-      it.print(180, 150, id(font_main), Color::BLACK, "Test Default Color");
+      it.print(960/2-100, 100, id(font_main),   "Test Default Color");
 
       // Icons
-      it.printf(180, 300, id(font_icons), Color::BLACK, "\U000F0595"); // mdi-weather-cloudy
-      it.printf(300, 300, id(font_icons), Color::WHITE, "\U000F0593"); // mdi-weather-cloudy
+      it.printf(960/2-100, 150, id(font_icons),  Color::BLACK, "\U000F0595"); // mdi-weather-cloudy
+      it.printf(960/2-100, 300, id(font_icons),  Color::WHITE, "\U000F0593"); // mdi-weather-lightning
+
+      it.printf(960/2-100, 400, id(font_icons),   "\U000F0597"); // mdi-weather-rainy
+

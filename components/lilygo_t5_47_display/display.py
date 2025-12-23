@@ -48,6 +48,7 @@ async def to_code(config):
         cg.add(var.set_writer(lambda_))
 
 
+    cg.add(var.set_full_update_every(config[CONF_FULL_UPDATE_EVERY]))
     cg.add(var.set_clear_screen(config[CONF_CLEAR]))
     cg.add(var.set_temperature(config[CONF_TEMPERATURE]))
     cg.add(var.set_landscape(config[CONF_LANDSCAPE]))

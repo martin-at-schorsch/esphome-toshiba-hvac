@@ -18,6 +18,7 @@ void LilygoT547Display::set_power_off_delay_enabled(bool power_off_delay_enabled
 void LilygoT547Display::set_landscape(bool landscape) { this->landscape_ = landscape; }
 
 void LilygoT547Display::set_temperature(uint32_t temperature) { this->temperature_ = temperature; }
+void LilygoT547Display::set_full_update_every(uint32_t interval) { this->full_update_every_ = interval; }
 
 int LilygoT547Display::get_width_internal() { return 960; }
 
@@ -56,10 +57,10 @@ void LilygoT547Display::update() {
   fb = epd_hl_get_framebuffer(&hl);
   
   bool full_update = false;
-  if (30 != 0) {
+  if (this->full_update_every_ != 0) {
       static uint32_t frame_count = 0;
       frame_count++;
-      if (frame_count >= 30) {
+      if (frame_count >= this->full_update_every_) {
           full_update = true;
           frame_count = 0;
       }
