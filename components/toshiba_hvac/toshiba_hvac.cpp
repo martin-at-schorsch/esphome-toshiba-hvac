@@ -1,230 +1,225 @@
-// toshiba_hvac.cpp
+// esphome/components/toshiba_hvac/toshiba_hvac.cpp
+
 #include "toshiba_hvac.h"
 #include "esphome/core/log.h"
+#include "esphome/core/helpers.h"
 
 namespace esphome {
-    namespace toshiba_hvac {
+namespace toshiba_hvac {
 
-        static const char *TAG = "toshiba_hvac";
+const char *const ToshibaHVACClimate::TAG = "toshiba_hvac";
 
-        // Toshiba HVAC Konstanten (Definitionen)
-        const std::vector<uint8_t> POLL_COMMAND = {0x20, 0x00, 0x00, 0x00, 0x08, 0x01, 0x00, 0x19};
-        const std::vector<uint8_t> SET_MODE_TEMP_COMMAND_PREFIX = {0x20, 0x00, 0x00, 0x00, 0x11, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; //Basisteil zum Setzen von Modus und Temperatur
-        const std::vector<uint8_t> FAN_SPEED_COMMAND_PREFIX = {0x20, 0x00, 0x00, 0x00, 0x09, 0x50, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; //Basis zum setzen der Fan Speed
+using namespace climate;
 
-        // Hilfsfunktionen (Definitionen)
-        uint8_t ToshibaHVAC::calculateChecksum(const std::vector<uint8_t>& data) {
-            uint8_t checksum = 0;
-            for (uint8_t byte : data) {
-                checksum += byte;
-            }
-            return checksum;
-        }
+// Zeitabstand für das Polling in Millisekunden
+const uint32_t POLLING_INTERVAL_MS = 5000;
 
-        std::vector<uint8_t> ToshibaHVAC::addChecksum(const std::vector<uint8_t>& data) {
-            std::vector<uint8_t> commandWithChecksum = data;
-            uint8_t checksum = calculateChecksum(data);
-            commandWithChecksum.push_back(checksum);
-            return commandWithChecksum;
-        }
+// ----- Protokoll-Konstanten (basiert auf ormsport/ToshibaCarrierHvac) -----
+// Befehls-Header
+const uint8_t HEADER_1 = 0x20;
+const uint8_t HEADER_2 = 0x00;
+const uint8_t HEADER_3 = 0x00;
+const uint8_t HEADER_4 = 0x00;
+
+// Befehls-Typen
+const uint8_t CMD_TYPE_STATUS_REQUEST = 0x08;
+const uint8_t CMD_TYPE_SET_STATE = 0x09;
+
+// Nachrichten-Nutzlast für Statusabfrage
+const uint8_t STATUS_REQUEST_PAYLOAD[] = {0x01, 0x00, 0x19};
+
+// -------------------------------------------------------------------------
+
+void ToshibaHVACClimate::setup() {
+    ESP_LOGCONFIG(TAG, "Toshiba HVAC wird eingerichtet...");
+    this->mode = CLIMATE_MODE_OFF;
+    this->target_temperature = 22.0f;
+    this->fan_mode = CLIMATE_FAN_AUTO;
+    
+    // Initialen Zustand für den Vergleich speichern.
+    this->last_sent_mode_ = this->mode;
+    this->last_sent_target_temperature_ = this->target_temperature;
+    
+    if (this->fan_mode.has_value()) {
+        this->last_sent_fan_mode_ = *this->fan_mode;
+    }
+    
+    this->last_poll_ = millis();
+}
+
+void ToshibaHVACClimate::dump_config() {
+    LOG_CLIMATE("", "Toshiba HVAC", this);
+}
+
+void ToshibaHVACClimate::loop() {
+    // Regelmäßig den Status von der Klimaanlage abfragen
+    if (millis() - this->last_poll_ > POLLING_INTERVAL_MS) {
+        this->last_poll_ = millis();
+        ESP_LOGD(TAG, "Sende Status-Polling-Anfrage...");
         
-        //Konvertiert den Enum Wert in den uint8_t Wert
-        uint8_t ToshibaHVAC::operationModeToByte(OperationMode mode){
-            switch(mode){
-                case OperationMode::AUTO: return 0x00;
-                case OperationMode::COOL: return 0x01;
-                case OperationMode::HEAT: return 0x02;
-                case OperationMode::DRY: return 0x03;
-                case OperationMode::FAN_ONLY: return 0x04;
-                case OperationMode::OFF: return 0x05;
-                default: return 0x00;
-            }
-        }
-        
-        uint8_t ToshibaHVAC::fanSpeedToByte(FanSpeed speed){
-             switch(speed){
-                case FanSpeed::AUTO: return 0x00;
-                case FanSpeed::LOW: return 0x01;
-                case FanSpeed::MEDIUM: return 0x02;
-                case FanSpeed::HIGH: return 0x03;
-                case FanSpeed::SILENT: return 0x06;
-                default: return 0x00;
-            }
-        }
+        std::vector<uint8_t> poll_command = {HEADER_1, HEADER_2, HEADER_3, HEADER_4,
+                                             CMD_TYPE_STATUS_REQUEST, 
+                                             STATUS_REQUEST_PAYLOAD[0], STATUS_REQUEST_PAYLOAD[1], STATUS_REQUEST_PAYLOAD[2]};
+        // Checksumme hinzufügen (falls für Poll-Befehl erforderlich) und senden.
+        // In vielen Implementierungen hat der Poll-Befehl eine feste Checksumme.
+        // Laut `ormsport` ist die Checksumme für Poll `0x19`.
+        this->send_hvac_command(poll_command);
+    }
+    
+    // Eingehende Daten von der Klimaanlage lesen
+    while (this->uart_->available()) {
+        // Hier Logik zum Lesen und Verarbeiten der Antwort implementieren
+    }
+}
 
-        // ToshibaHVACClimate Klassenmethoden
+ClimateTraits ToshibaHVACClimate::traits() {
+    auto traits = ClimateTraits();
+    traits.set_supports_current_temperature(false); // Anpassen, falls ein Sensor ausgelesen wird
+    traits.set_visual_min_temperature(17.0f);
+    traits.set_visual_max_temperature(30.0f);
+    traits.set_visual_temperature_step(1.0f);
 
-        void ToshibaHVACClimate::setup() {
-            // Initialisierung der UART-Kommunikation erfolgt bereits durch ESPHome
-            ESP_LOGCONFIG(TAG, "Setting up Toshiba HVAC communication");
-        }
+    traits.set_supported_modes({
+        CLIMATE_MODE_OFF, CLIMATE_MODE_COOL, CLIMATE_MODE_HEAT,
+        CLIMATE_MODE_DRY, CLIMATE_MODE_FAN_ONLY, CLIMATE_MODE_AUTO
+    });
 
-        void ToshibaHVACClimate::loop() {
-            // Regelmäßig Status abfragen
-            sendHVACCommand(ToshibaHVAC::POLL_COMMAND);
-            std::vector<uint8_t> response = receiveHVACResponse();
-            processHVACResponse(response);
-            delay(5000); // Wartezeit bis zur nächsten Abfrage
-        }
+    traits.set_supported_fan_modes({
+        CLIMATE_FAN_AUTO, CLIMATE_FAN_LOW, CLIMATE_FAN_MEDIUM, CLIMATE_FAN_HIGH
+    });
 
-        void ToshibaHVACClimate::sendHVACCommand(const std::vector<uint8_t>& command) {
-            std::vector<uint8_t> fullCommand = ToshibaHVAC::addChecksum(command);
-            for (uint8_t byte : fullCommand) {
-                uart_->write(byte);
-            }
-            // Wartezeit für Antwort
-            delay(100);
-        }
+    return traits;
+}
 
-        std::vector<uint8_t> ToshibaHVACClimate::receiveHVACResponse() {
-            std::vector<uint8_t> response;
-            while (uart_->available()) {
-                response.push_back(uart_->read());
-            }
-            return response;
-        }
+void ToshibaHVACClimate::control(const ClimateCall &call) {
+    bool state_changed = false;
+    if (call.get_mode().has_value()) {
+        this->mode = *call.get_mode();
+        state_changed = true;
+    }
+    if (call.get_target_temperature().has_value()) {
+        this->target_temperature = *call.get_target_temperature();
+        state_changed = true;
+    }
+    if (call.get_fan_mode().has_value()) {
+        this->fan_mode = *call.get_fan_mode();
+        state_changed = true;
+    }
 
-        void ToshibaHVACClimate::processHVACResponse(const std::vector<uint8_t>& data) {
-           if (data.empty()) return;
+    if (state_changed) {
+        this->set_hvac_state();
+    }
 
-          ESP_LOGD(TAG, "Received data: %s", format_hex(data).c_str());
+    this->publish_state();
+}
 
-           // Beispiel: Statusantwort verarbeiten (sehr vereinfacht)
-           // Annahme:  Byte 0: Startbyte, Byte 1: Befehl, Daten folgen, Letztes Byte: Checksumme
-           if (data.size() > 3 && data[0] == 0x24) { // Beispiel Startbyte
-                //Hier die Logik zum Verarbeiten der Antwort einfügen
-                // Temperatur extrahieren
-                if(data[1] == 0x21){
-                    int temperature = data[5]; //zb Byte 5 enthält die Temp
-                    ESP_LOGD(TAG,"Temp: %i", temperature);
-                    current_temperature_ = temperature;
-                    //Man muss hier den Wert noch an ESPHome übermitteln.
-                    this->publish_state();
-                }
-           }
-        }
+uint8_t ToshibaHVACClimate::calculate_checksum(const std::vector<uint8_t> &command) {
+    uint8_t checksum = 0;
+    // Die Checksumme ist ein einfaches XOR über alle Bytes des Befehls.
+    for (uint8_t byte : command) {
+        checksum ^= byte;
+    }
+    return checksum;
+}
 
-        void ToshibaHVACClimate::set_target_temperature(float temperature) {
-            ESP_LOGD(TAG, "Setting target temperature to: %f", temperature);
-            // Hier die Logik zum Umwandeln der Temperatur in das Toshiba-Format
-            int temp_toshiba = static_cast<int>(temperature); // Beispiel: float zu int
-            setHVACTemperature(temp_toshiba);
-            this->publish_state();
-        }
+void ToshibaHVACClimate::set_hvac_state() {
+    // Sicherstellen, dass alle Werte vorhanden sind
+    if (!this->fan_mode.has_value()) return;
 
-        void ToshibaHVACClimate::set_mode(ClimateMode mode) {
-             ESP_LOGD(TAG, "Setting mode to: %i", mode);
-             hvac_is_on_ = (mode != CLIMATE_MODE_OFF);
-             ToshibaHVAC::OperationMode toshibaMode = esphomeModeToToshibaMode(mode);
-             setHVACMode(toshibaMode);
-             this->publish_state();
-        }
+    ESP_LOGD(TAG, "Bereite Befehl vor: Mode=%s, Temp=%.1f°C, Fan=%s", 
+             climate_mode_to_string(this->mode), this->target_temperature, 
+             climate_fan_mode_to_string(*this->fan_mode));
 
-       void ToshibaHVACClimate::set_fan_mode(FanMode mode){
-            ESP_LOGD(TAG, "Setting fan mode: %i", mode);
-            ToshibaHVAC::FanSpeed toshibaFanSpeed = esphomeFanModeToToshibaFanSpeed(mode);
-            setHVACFanSpeed(toshibaFanSpeed);
-            this->publish_state();
-       }
-       
-        float ToshibaHVACClimate::get_target_temperature() override{
-            return current_temperature_;
-        }
-        
-        ClimateMode ToshibaHVACClimate::get_mode() override{
-            return toshibaModeToEsphomeMode(current_mode_);
-        }
-        
-        FanMode ToshibaHVACClimate::get_fan_mode() override{
-            return toshibaFanSpeedToEsphomeFanMode(current_fan_speed_);
-        }
+    // ---- Befehl gemäß ormsport/ToshibaCarrierHvac Protokoll zusammenbauen ----
+    // Byte 0-3: Header
+    // Byte 4:   Befehlstyp (0x09 für Setzen)
+    // Byte 5:   Power & Modus
+    // Byte 6:   Temperatur
+    // Byte 7:   Lüftermodus & Schwingen (Swing)
+    // Byte 8:   Immer 0x00
+    // Byte 9:   Checksumme
+    // -------------------------------------------------------------------------
+    
+    std::vector<uint8_t> command(9); // 9 Bytes für den Befehl + 1 für Checksumme
+    command[0] = HEADER_1;
+    command[1] = HEADER_2;
+    command[2] = HEADER_3;
+    command[3] = HEADER_4;
+    command[4] = CMD_TYPE_SET_STATE;
 
-        void ToshibaHVACClimate::setHVACMode(ToshibaHVAC::OperationMode mode) {
-            current_mode_ = mode;
-            std::vector<uint8_t> command = ToshibaHVAC::SET_MODE_TEMP_COMMAND_PREFIX;
-            command[7] = ToshibaHVAC::operationModeToByte(mode); // Mode Byte
-            sendHVACCommand(command);
-        }
+    // Byte 5: Power & Modus
+    // Power ON ist 0x01, OFF ist 0x00. Der Modus wird in die höheren Bits kodiert.
+    uint8_t power_mode_byte = 0x00;
+    if (this->mode == CLIMATE_MODE_OFF) {
+        power_mode_byte = 0x00; // Power OFF
+    } else {
+        power_mode_byte = 0x01; // Power ON
+        power_mode_byte |= (esphome_mode_to_toshiba(this->mode)) << 1;
+    }
+    command[5] = power_mode_byte;
 
-        void ToshibaHVACClimate::setHVACTemperature(int temp) {
-            current_temperature_ = temp;
-            std::vector<uint8_t> command = ToshibaHVAC::SET_MODE_TEMP_COMMAND_PREFIX;
-            command[9] = static_cast<uint8_t>(temp);  // Temperatur Byte
-            sendHVACCommand(command);
-        }
-        
-        void ToshibaHVACClimate::setHVACFanSpeed(ToshibaHVAC::FanSpeed speed){
-            current_fan_speed_ = speed;
-            std::vector<uint8_t> command = ToshibaHVAC::FAN_SPEED_COMMAND_PREFIX;
-            command[6] = ToshibaHVAC::fanSpeedToByte(speed);
-            sendHVACCommand(command);
-        }
+    // Byte 6: Temperatur
+    // Temperatur wird als `(gewünschte_temp - 17) * 2` kodiert.
+    uint8_t temp_byte = (static_cast<uint8_t>(this->target_temperature) - 17) * 2;
+    command[6] = temp_byte;
 
-        ToshibaHVAC::OperationMode ToshibaHVACClimate::esphomeModeToToshibaMode(ClimateMode mode) {
-            switch (mode) {
-                case CLIMATE_MODE_OFF: return ToshibaHVAC::OperationMode::OFF;
-                case CLIMATE_MODE_HEAT: return ToshibaHVAC::OperationMode::HEAT;
-                case CLIMATE_MODE_COOL: return ToshibaHVAC::OperationMode::COOL;
-                case CLIMATE_MODE_AUTO: return ToshibaHVAC::OperationMode::AUTO;
-                case CLIMATE_MODE_DRY: return ToshibaHVAC::OperationMode::DRY;
-                case CLIMATE_MODE_FAN_ONLY: return ToshibaHVAC::OperationMode::FAN_ONLY;
-                default: return ToshibaHVAC::OperationMode::AUTO;
-            }
-        }
-        
-        ClimateMode ToshibaHVACClimate::toshibaModeToEsphomeMode(ToshibaHVAC::OperationMode mode){
-             switch (mode) {
-                case ToshibaHVAC::OperationMode::OFF: return CLIMATE_MODE_OFF;
-                case ToshibaHVAC::OperationMode::HEAT: return CLIMATE_MODE_HEAT;
-                case ToshibaHVAC::OperationMode::COOL: return CLIMATE_MODE_COOL;
-                case ToshibaHVAC::OperationMode::AUTO: return CLIMATE_MODE_AUTO;
-                case ToshibaHVAC::OperationMode::DRY: return CLIMATE_MODE_DRY;
-                case ToshibaHVAC::OperationMode::FAN_ONLY: return CLIMATE_MODE_FAN_ONLY;
-                default: return CLIMATE_MODE_AUTO;
-            }
-        }
-        
-        ToshibaHVAC::FanSpeed ToshibaHVACClimate::esphomeFanModeToToshibaFanSpeed(FanMode mode) {
-            switch (mode) {
-              case FAN_MODE_OFF:
-              case FAN_MODE_AUTO:
-                return ToshibaHVAC::FanSpeed::AUTO;
-              case FAN_MODE_LOW:
-                return ToshibaHVAC::FanSpeed::LOW;
-              case FAN_MODE_MEDIUM:
-                return ToshibaHVAC::FanSpeed::MEDIUM;
-              case FAN_MODE_HIGH:
-                return ToshibaHVAC::FanSpeed::HIGH;
-              default:
-                return ToshibaHVAC::FanSpeed::AUTO;
-            }
-        }
-        
-        FanMode ToshibaHVACClimate::toshibaFanSpeedToEsphomeFanMode(ToshibaHVAC::FanSpeed speed){
-             switch (speed) {
-                case ToshibaHVAC::FanSpeed::AUTO: return FAN_MODE_AUTO;
-                case ToshibaHVAC::FanSpeed::LOW: return FAN_MODE_LOW;
-                case ToshibaHVAC::FanSpeed::MEDIUM: return FAN_MODE_MEDIUM;
-                case ToshibaHVAC::FanSpeed::HIGH: return FAN_MODE_HIGH;
-                case ToshibaHVAC::FanSpeed::SILENT: return FAN_MODE_LOW; //Silent als Low zurückgeben
-                default: return FAN_MODE_AUTO;
-            }
-        }
+    // Byte 7: Lüftermodus
+    // Die unteren 3 Bits sind für den Lüftermodus. Swing wird hier nicht gesteuert.
+    uint8_t fan_byte = (esphome_fan_mode_to_toshiba(*this->fan_mode));
+    command[7] = fan_byte;
+    
+    // Byte 8 ist immer 0x00
+    command[8] = 0x00;
 
-    } // namespace toshiba_hvac
-} // namespace esphome
+    // Byte 9: Checksumme
+    uint8_t checksum = calculate_checksum(command);
+    command.push_back(checksum); // Füge die Checksumme als 10. Byte hinzu
 
-// Deklaration der Komponente für ESPHome
-namespace esphome {
-    namespace components {
-        void toshiba_hvac::ToshibaHVACClimate::setup() {
-            // Initialisierung der UART-Kommunikation
-            ESP_LOGCONFIG(TAG, "Setting up Toshiba HVAC communication");
-        }
-        
-        climate::Climate *new_climate(UARTComponent *config) {
-            return new toshiba_hvac::ToshibaHVACClimate(config);
-        }
-        
-    }  // namespace components
+    send_hvac_command(command);
+
+    // Neuen Zustand als "gesendet" markieren
+    this->last_sent_mode_ = this->mode;
+    this->last_sent_target_temperature_ = this->target_temperature;
+    this->last_sent_fan_mode_ = *this->fan_mode;
+}
+
+void ToshibaHVACClimate::send_hvac_command(const std::vector<uint8_t> &command) {
+    if (this->uart_ == nullptr) {
+        ESP_LOGE(TAG, "UART nicht konfiguriert!");
+        return;
+    }
+    ESP_LOGD(TAG, "Sende Befehl: %s", format_hex_pretty(command).c_str());
+    this->uart_->write_array(command);
+    this->uart_->flush(); // Sicherstellen, dass der Befehl gesendet wird
+}
+
+// Konvertierungs-Helfer (Enums müssen mit dem Protokoll übereinstimmen)
+uint8_t ToshibaHVACClimate::esphome_mode_to_toshiba(ClimateMode mode) {
+    switch (mode) {
+        case CLIMATE_MODE_AUTO:     return 0b000; // 0
+        case CLIMATE_MODE_COOL:     return 0b001; // 1
+        case CLIMATE_MODE_HEAT:     return 0b010; // 2
+        case CLIMATE_MODE_DRY:      return 0b011; // 3
+        case CLIMATE_MODE_FAN_ONLY: return 0b100; // 4
+        case CLIMATE_MODE_OFF:      return 0b101; // 5
+        //case CLIMATE_MODE_HEAT_COOL:return 0b110; // 6
+        //case CLIMATE_MODE_DRY_COOL: return 0b111; // 7
+        default:                    return 0b000; // Fallback auf Auto
+    }
+}
+
+uint8_t ToshibaHVACClimate::esphome_fan_mode_to_toshiba(ClimateFanMode fan_mode) {
+    switch (fan_mode) {
+        case CLIMATE_FAN_AUTO:   return 0b000; // 0
+        case CLIMATE_FAN_LOW:    return 0b001; // 1
+        case CLIMATE_FAN_MEDIUM: return 0b010; // 2
+        case CLIMATE_FAN_HIGH:   return 0b100; // 4 (Laut Repo ist "Medium-High" 3, "High" ist 4)
+        //case CLIMATE_FAN_SILENT: return 0b101; // 5
+        //case CLIMATE_FAN_MAX:    return 0b110; // 6
+        //case CLIMATE_FAN_ECO:    return 0b111; // 7
+        default:                 return 0b000;
+    }
+}
+
+}  // namespace toshiba_hvac
 }  // namespace esphome

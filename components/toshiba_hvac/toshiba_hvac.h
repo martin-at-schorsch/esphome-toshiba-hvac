@@ -1,93 +1,63 @@
-// toshiba_hvac.h
-#ifndef ESPHOME_COMPONENTS_TOSHIBA_HVAC_H_
-#define ESPHOME_COMPONENTS_TOSHIBA_HVAC_H_
+#pragma once
 
-#include "esphome.h"
-
+#include "esphome/core/component.h"
+#include "esphome/components/climate/climate.h" 
+#include "esphome/components/uart/uart.h"
 #include <vector>
-#include <array>
 
-// Toshiba HVAC Konstanten und Enums (wie im vorherigen YAML)
-namespace ToshibaHVAC {
-    // Befehle
-    extern const std::vector<uint8_t> POLL_COMMAND;
-    extern const std::vector<uint8_t> SET_MODE_TEMP_COMMAND_PREFIX;
-    extern const std::vector<uint8_t> FAN_SPEED_COMMAND_PREFIX;
+namespace esphome {
+namespace toshiba_hvac {
 
-    // Modi
-    enum class OperationMode {
-        AUTO = 0x00,
-        COOL = 0x01,
-        HEAT = 0x02,
-        DRY = 0x03,
-        FAN_ONLY = 0x04,
-        OFF = 0x05
-    };
+// Interne Enums für die Logik deiner Komponente
+enum class OperationMode { AUTO = 0x00, COOL = 0x01, HEAT = 0x02, DRY = 0x03, FAN_ONLY = 0x04, OFF = 0x05 };
+enum class FanSpeed { AUTO = 0x00, FAN_LOW = 0x01, FAN_MEDIUM = 0x02, FAN_HIGH = 0x03, FAN_SILENT = 0x04 };
 
-      // Fan Geschwindigkeiten
-    enum class FanSpeed {
-        AUTO = 0x00,
-        LOW = 0x01,
-        MEDIUM = 0x02,
-        HIGH = 0x03,
-        SILENT = 0x06
-    };
-
-    // Hilfsfunktionen
-    uint8_t calculateChecksum(const std::vector<uint8_t>& data);
-    std::vector<uint8_t> addChecksum(const std::vector<uint8_t>& data);
-    
-    //Konvertiert den Enum Wert in den uint8_t Wert
-    uint8_t operationModeToByte(OperationMode mode);
-    uint8_t fanSpeedToByte(FanSpeed speed);
-
-} // namespace ToshibaHVAC
-
-// Klasse für die Toshiba HVAC Komponente
-class ToshibaHVACClimate : public Component, public Climate {
+class ToshibaHVACClimate : public climate::Climate, public Component {
 public:
-    ToshibaHVACClimate(UARTComponent *uart) : uart_(uart) {}
+    // TAG für das Logging
+    static const char *const TAG;
 
+    // Setter für die UART-Komponente
+    void set_uart(uart::UARTComponent *uart) { this->uart_ = uart; }
+
+    // Überschriebene Methoden von Component
     void setup() override;
     void loop() override;
+    void dump_config() override;
 
-    // Von der Climate Klasse geerbte Methoden
-    void set_target_temperature(float temperature) override;
-    void set_mode(ClimateMode mode) override;
-    void set_fan_mode(FanMode mode) override;
-    
-    float get_target_temperature() override;
-    ClimateMode get_mode() override;
-    FanMode get_fan_mode() override;
-    
-    
-    
-private:
-    UARTComponent *uart_;
+    // Überschriebene Methoden von Climate
+    climate::ClimateTraits traits() override; // KORREKTUR: 'get_traits' zu 'traits' geändert
+    void control(const climate::ClimateCall &call) override;
 
-    // Aktueller Zustand
-    float current_temperature_ = 22.0f;  // Standardwert
-    ToshibaHVAC::OperationMode current_mode_ = ToshibaHVAC::OperationMode::AUTO;
-    ToshibaHVAC::FanSpeed current_fan_speed_ = ToshibaHVAC::FanSpeed::AUTO;
-    bool hvac_is_on_ = true;
+protected:
+    // Hilfsmethoden zur Ansteuerung der Klimaanlage
+    void send_hvac_command(const std::vector<uint8_t> &command);
+    void set_hvac_state();
 
-    // Senden und Empfangen von Daten
-    void sendHVACCommand(const std::vector<uint8_t>& command);
-    std::vector<uint8_t> receiveHVACResponse();
-    void processHVACResponse(const std::vector<uint8_t>& data);
+    // Konvertierungs-Helfer
+    uint8_t esphome_mode_to_toshiba(climate::ClimateMode mode);
+    uint8_t esphome_fan_mode_to_toshiba(climate::ClimateFanMode fan_mode);
 
-    // Helfermethoden zum Setzen von Werten
-     void setHVACMode(ToshibaHVAC::OperationMode mode);
-     void setHVACTemperature(int temp);
-     void setHVACFanSpeed(ToshibaHVAC::FanSpeed speed);
-     
-    // Konvertiert ESPHome ClimateMode und FanMode zu ToshibaHVAC Enums.
-    ToshibaHVAC::OperationMode esphomeModeToToshibaMode(ClimateMode mode);
-    ClimateMode toshibaModeToEsphomeMode(ToshibaHVAC::OperationMode mode);
+    uart::UARTComponent *uart_{nullptr};
+
+    // Interner Zustand, um redundante Befehle zu vermeiden
+    climate::ClimateMode last_sent_mode_{climate::CLIMATE_MODE_OFF};
+    float last_sent_target_temperature_{22.0f};
+    climate::ClimateFanMode last_sent_fan_mode_{climate::CLIMATE_FAN_AUTO};
     
-    ToshibaHVAC::FanSpeed esphomeFanModeToToshibaFanSpeed(FanMode mode);
-    FanMode toshibaFanSpeedToEsphomeFanMode(ToshibaHVAC::FanSpeed speed);
-    
+    uint32_t last_poll_{0};
+    uint8_t calculate_checksum(const std::vector<uint8_t> &command);
+    uint8_t power_mode_byte;
+    uint8_t temp_byte;
+    uint8_t fan_byte;
+    uint8_t swing_byte;
+    uint8_t checksum;
+    std::vector<uint8_t> command;
+
+
+
+
 };
 
-#endif // ESPHOME_COMPONENTS_TOSHIBA_HVAC_H_
+}  // namespace toshiba_hvac
+}  // namespace esphome
