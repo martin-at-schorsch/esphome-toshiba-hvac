@@ -54,8 +54,8 @@ async def to_code(config):
     cg.add(var.set_landscape(config[CONF_LANDSCAPE]))
     cg.add(var.set_power_off_delay_enabled(config[CONF_POWER_OFF_DELAY_ENABLED]))
     
-    # Lädt die aktuellste epdiy Bibliothek
-    cg.add_library("https://github.com/vroland/epdiy.git#main", None)
+    # Lädt die lokale epdiy Bibliothek mit Fixes für ESP-IDF 5
+    cg.add_library("epdiy", None, "file:///config/components/epdiy")
     
     cg.add_build_flag("-DBOARD_HAS_PSRAM")
     cg.add_build_flag("-DCONFIG_EPD_DISPLAY_TYPE_ED047TC1")
