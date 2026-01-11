@@ -34,7 +34,11 @@ CONFIG_SCHEMA = cv.All(
 )
 
 
+
 async def to_code(config):
+    if "psram" not in cg.CORE.config:
+        raise cv.Invalid("This component requires PSRAM to be enabled. Please add 'psram:' to your configuration.")
+
     var = cg.new_Pvariable(config[CONF_ID])
 
     # FIX: Manuelle Registrierung entfernt, da display.register_display dies nun übernimmt
