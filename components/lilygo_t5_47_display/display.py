@@ -1,5 +1,6 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
+import os
 from esphome.components import display
 from esphome.const import (
     CONF_FULL_UPDATE_EVERY,
@@ -54,8 +55,11 @@ async def to_code(config):
     cg.add(var.set_landscape(config[CONF_LANDSCAPE]))
     cg.add(var.set_power_off_delay_enabled(config[CONF_POWER_OFF_DELAY_ENABLED]))
     
-    # Lädt die lokale epdiy Bibliothek mit Fixes für ESP-IDF 5
-    cg.add_library("epdiy", None, "file:///config/components/epdiy")
+    # Lädt die epdiy Bibliothek relativ zu diesem Component (erwartet '../epdiy')
+    # Dies funktioniert lokal UND wenn beide Components per external_components geladen werden.
+    component_dir = os.path.dirname(os.path.abspath(__file__))
+    epdiy_path = os.path.join(component_dir, "../epdiy")
+    cg.add_library("epdiy", None, "file://" + epdiy_path)
     
     cg.add_build_flag("-DBOARD_HAS_PSRAM")
     cg.add_build_flag("-DCONFIG_EPD_DISPLAY_TYPE_ED047TC1")
