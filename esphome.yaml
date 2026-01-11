@@ -1,5 +1,0 @@
-name: "Toshiba HVAC"
-platform: "custom"
-description: "ESPHome component to control Toshiba HVAC systems"
-author: "martin-at-schorsch"
-version: "1.0.0"
