@@ -1,0 +1,141 @@
+# LilyGO T5_V2.3_2.13 - Überarbeitet von Gemini
+
+esphome:
+  name: coffeemaker-lnz-b01-2
+  on_boot:
+    priority: -100
+    then:
+      - component.update: epaper
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+  # Weck-Pins für den Tiefschlaf definieren
+  ext1_wakeup:
+    pins:
+      - number: 39
+        inverted: true
+      - number: 35
+        inverted: true
+    mode: ANY_HIGH
+
+# Deep Sleep für Energieersparnis
+deep_sleep:
+  run_duration: 60s
+  sleep_duration: 5min
+
+# Standard-Komponenten
+logger:
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  power_save_mode: light
+
+captive_portal:
+
+api:
+
+ota:
+  - platform: esphome
+    password: "G24mqttATopenhab"
+
+web_server:
+  port: 80
+
+# MQTT-Client
+mqtt:
+  broker: !secret mqtt_host
+  username: !secret mqtt_username
+  password: !secret mqtt_password
+  on_connect:
+    then:
+      - mqtt.subscribe:
+          topic: coffeemaker-lnz-b01-2/sensor/error_report/state
+
+# Binärsensoren für die Tasten
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: 39
+      inverted: true
+    name: "Problem melden"
+    on_press:
+      then:
+        - mqtt.publish:
+            topic: coffeemaker-lnz-b01-2/sensor/error_report/state
+            payload: "Problem gemeldet"
+            retain: true
+        - component.update: epaper
+
+  - platform: gpio
+    pin:
+      number: 35
+      inverted: true
+    name: "Problem behoben"
+    on_press:
+      then:
+        - mqtt.publish:
+            topic: coffeemaker-lnz-b01-2/sensor/error_report/state
+            payload: ""
+            retain: true
+        - component.update: epaper
+
+# Textsensor für den Status der Kaffeemaschine
+text_sensor:
+  - platform: mqtt_subscribe
+    name: "Coffee Machine State"
+    id: coffeemaker_error_report
+    topic: coffeemaker-lnz-b01-2/sensor/error_report/state
+    on_value:
+      then:
+        - component.update: epaper
+
+# Hardware-SPI für das Display
+spi:
+  clk_pin: 18
+  mosi_pin: 23
+
+# Schriftarten inkl. Icons
+font:
+  - file: "fonts/Helvetica.ttf"
+    id: helvetica_18
+    size: 18
+  - file: "fonts/Helvetica.ttf"
+    id: helvetica_12
+    size: 12
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: mdi_icons_64
+    size: 64
+    glyphs:
+      - "\U000F015A" # mdi:coffee
+      - "\U000F015C" # mdi:coffee-off-outline
+
+# E-Paper Display Konfiguration
+display:
+  - platform: waveshare_epaper
+    id: epaper
+    cs_pin: 5
+    dc_pin: 17
+    busy_pin: 4
+    reset_pin: 16
+    model: 2.13in-ttgo-b73
+    rotation: 90
+    update_interval: never # Manuelle Updates
+    lambda: |-
+      // Tastenfunktionen oben anzeigen
+      it.printf(5, 1, id(helvetica_12), TextAlign::TOP_LEFT, "Problem");
+      it.printf(it.get_width() - 5, 1, id(helvetica_12), TextAlign::TOP_RIGHT, "OK");
+      it.line(0, 15, it.get_width(), 15);
+
+      // Status prüfen und Icon/Text anzeigen
+      if (id(coffeemaker_error_report).state.empty()) {
+        // Zustand: OK
+        it.printf(it.get_width() / 2, 75, id(mdi_icons_64), TextAlign::CENTER, "\U000F015A"); // mdi:coffee
+        it.printf(it.get_width() / 2, 115, id(helvetica_18), TextAlign::BOTTOM_CENTER, "Alles OK");
+      } else {
+        // Zustand: Problem
+        it.printf(it.get_width() / 2, 75, id(mdi_icons_64), TextAlign::CENTER, "\U000F015C"); // mdi:coffee-off-outline
+        it.printf(it.get_width() / 2, 115, id(helvetica_18), TextAlign::BOTTOM_CENTER, "Problem gemeldet");
+      }

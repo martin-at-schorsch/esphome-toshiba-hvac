@@ -1,0 +1,91 @@
+
+substitutions:
+  device_name: "Toshiba AC Example"
+
+
+esphome:
+  name: toshiba-tcc-link
+  friendly_name: toshiba tcc link
+
+#esp32:
+#  board: esp32-c3-devkitm-1
+#  framework:
+#    type: arduino
+
+esp32:
+  board: esp32-s2-saola-1
+  framework:
+    type: arduino
+
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "YkJolpacWHKEnKBSR/UXrclfjyEYhXPqIgcO2aZcm3k="
+
+ota:
+  platform: esphome
+  password: "fd967df3fd6ed469eea4ffd8bca9f698"
+
+wifi:
+  networks:
+  - ssid: !secret wifi_ssid
+    password: !secret wifi_password
+  - ssid: ff-IoT
+    password: IoT4FFP06216! 
+
+
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    #ssid: "Toshiba-Tcc-Link"
+    #password: "DaKkHD7EDUT0"
+
+captive_portal:
+
+  
+
+web_server:
+  port: 80
+
+
+mqtt:
+  broker: !secret mqtt_host
+  username: !secret mqtt_username
+  password: !secret mqtt_password
+
+
+
+
+logger:
+  level: DEBUG
+
+external_components:
+  - source:
+      type: git
+      url: https://github.com/muxa/esphome-tcc-link
+
+status_led:
+  pin:
+    number: GPIO15
+    inverted: true
+
+uart:
+  tx_pin: GPIO21
+  rx_pin: GPIO17
+  baud_rate: 2400
+  parity: EVEN
+
+climate:
+  - platform: tcc_link
+    name: "${device_name}"
+    id: toshiba_ac
+    connected:
+      name: "${device_name} Connected"
+    failed_crcs:
+      name: "${device_name} Failed CRCs"
+    vent:
+      name: "${device_name} Vent"
+    on_data_received:
+      - lambda: |-
+          ESP_LOGD("TCC", "Data received: %d bytes", x.size());

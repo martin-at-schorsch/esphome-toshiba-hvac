@@ -1,0 +1,37 @@
+esphome:
+  name: psram-test-t5-47
+  on_boot:
+    priority: 800
+    then:
+      - lambda: |-
+          ESP_LOGI("psram_test", "Checking PSRAM...");
+          if (psramFound()) {
+            size_t psram_size = ESP.getPsramSize();
+            size_t free_psram = ESP.getFreePsram();
+            ESP_LOGI("psram_test", "PSRAM Found!");
+            ESP_LOGI("psram_test", "Total PSRAM: %u bytes (%u MB)", psram_size, psram_size / 1024 / 1024);
+            ESP_LOGI("psram_test", "Free PSRAM: %u bytes", free_psram);
+            
+            size_t alloc_size = 960 * 540 / 2;
+            void* ptr = ps_malloc(alloc_size);
+            if (ptr != nullptr) {
+               ESP_LOGI("psram_test", "Successfully allocated %u bytes in PSRAM", alloc_size);
+               free(ptr);
+            } else {
+               ESP_LOGE("psram_test", "Failed to allocate %u bytes in PSRAM!", alloc_size);
+            }
+    
+          } else {
+            ESP_LOGE("psram_test", "PSRAM NOT FOUND! This is a critical error for T5-4.7");
+          }
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+psram:
+  mode: quad
+  speed: 40MHz
+
+logger:

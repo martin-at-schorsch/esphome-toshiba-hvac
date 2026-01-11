@@ -1,0 +1,108 @@
+esphome:
+  name: esp32-heizungssteuerung
+  friendly_name: esp32-heizungssteuerung
+
+  on_boot:
+    priority: 500
+    # ...
+    then:
+        - output.set_level:
+            id: dac_output
+            level: 10%
+
+
+esp32:
+  board: featheresp32
+  framework:
+    #type: arduino
+    type: esp-idf
+
+# Enable logging
+logger:
+#  level: WARN
+
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "KtV8ly/T02lvutp3d5lazXifbe+8QR1h8huOv6pXHUs="
+
+ota:
+  - platform: esphome
+    password: "fee2a4f7256abf64e613ef88582d724e"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  use_address: 192.168.30.95
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Esp32-Heizungssteuerung"
+    password: "PRQj92HxLcIv"
+
+web_server:
+  port: 80
+
+mqtt:
+  broker: !secret mqtt_host
+  username: !secret mqtt_username
+  password: !secret mqtt_password
+
+captive_portal:
+
+
+
+# Example configuration entry
+output:
+  - platform: esp32_dac
+    pin: GPIO25 # ESP32: GPIO25 (Channel 1) and GPIO26 (Channel 2). ESP32 S2: GPIO17 (Channel 1) and GPIO18 (Channel 2)
+    id: dac_output
+    min_power: 0.00
+    max_power: 0.90
+
+
+button:
+  - platform: restart
+    name: "Restart"
+
+
+#  - platform: template
+#    name: "set 10 3V"
+#    id: dac_output_10
+#   
+#    on_press:
+#      then:
+#        - output.set_level:
+#            id: dac_output
+#            level: 10%
+#    name: "set 00 0.8V"
+#    name: "set 20 5V "
+#    name: "set 34 8V "
+#    name: "set 50 12V "
+#    name: "set 60 15V "
+#    name: "set 90"
+ # Example usage
+#on_...:
+#  then:
+##    - output.set_level:
+#        id: dac_output
+#        level: 50%
+number:
+  - platform: template
+    name: "Heizungsspannung"
+    id: Heizungsspannung
+    optimistic: True
+    min_value: 3
+    max_value: 24
+    step: 1
+    # set_action:
+    on_value:
+      - output.set_level:
+          id: dac_output
+          level: !lambda "return ((x * 4) + 2)/100;"
+    #  - number.set:
+    #      id: Heizungsspannung
+    #      value: !lambda "return x;"
+
+bluetooth_proxy:
+    active: true

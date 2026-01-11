@@ -1,0 +1,82 @@
+substitutions:
+  name: wt32-eth01-bt-proxy-a13bb8
+
+esphome:
+  name: ${name}
+  #name_add_mac_suffix: true
+  project:
+    name: esphome.bluetooth-proxy
+    version: "1.0"
+
+esp32:
+  board: esp32doit-devkit-v1
+  framework:
+    type: esp-idf
+
+# Example configuration entry
+ethernet:
+  type: LAN8720
+  mdc_pin: GPIO23
+  mdio_pin: GPIO18
+  clk_mode: GPIO0_IN
+  phy_addr: 1
+  power_pin: GPIO16
+  # Optional manual IP
+ # manual_ip:
+ #   static_ip: 192.168.44.84
+ #   gateway: 192.168.44.30
+ #   subnet: 255.255.255.0
+
+
+#wifi:
+#  ssid: !secret wifi_ssid
+#  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+#  ap:
+#    ssid: "Wt32-Eth0-Demo Fallback Hotspot"
+#    password: "WByd9RbvIoXx"
+
+#captive_portal:
+
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "Va/s5cCko/eLxgentVeV3wHUj3SZEaS1y3vL42fgLmU="
+
+ota:
+  platform: esphome
+  password: "a5f3ce4a9a09e4b2b6c8744b16de4405"
+
+#mqtt:
+#  broker: 192.168.44.48
+#  username: openhabian
+#  password: "P18ATmqtt!"
+
+mqtt:
+  broker: !secret mqtt_host
+  username: !secret mqtt_username
+  password: !secret mqtt_password
+
+
+
+dashboard_import:
+  package_import_url: github://esphome/bluetooth-proxies/wt32-eth01.yaml@main
+
+esp32_ble_tracker:
+  scan_parameters:
+    interval: 1100ms
+    window: 1100ms
+    active: true
+
+bluetooth_proxy:
+  active: true
+
+button:
+- platform: safe_mode
+  name: Safe Mode Boot
+  entity_category: diagnostic
