@@ -34,7 +34,7 @@ void LilygoT547Display::setup() {
   if (heap_caps_get_free_size(MALLOC_CAP_SPIRAM) < 100000) {
       ESP_LOGE(TAG, "Not enough PSRAM for EPD! Free: %d", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
   }
-  epd_init(&epd_board_lilygo_t5_47, &ED047TC1, EPD_OPTIONS_DEFAULT);
+  epd_init(&epd_board_lilygo_t5_47, &ED047TC1, EPD_LUT_1K);
   hl = epd_hl_init(WAVEFORM);
   
   if (hl.front_fb == NULL || hl.back_fb == NULL) {
