@@ -129,6 +129,14 @@ If you encounter compilation errors, ensure you're using this fork with the comp
 
 Deprecation warnings for `gdma_new_channel` and `gdma_set_transfer_ability` are harmless - the old API still works in ESP-IDF 5.5.1.
 
+## Modifications for ESPHome / LilyGo T5-4.7
+
+In addition to the ESP-IDF 5 fixes from the Frogy76 fork, the following changes were made to support the LilyGo T5-4.7 (ESP32) with the new ADC driver:
+
+- **ADC Calibration**: Switch from "Curve Fitting" to "Line Fitting" in `src/board/epd_board_common.c`.
+  - The standard ESP32 in ESP-IDF 5 does not default to curve fitting for ADC calibration, which caused compilation errors.
+  - Replaced `adc_cali_curve_fitting_config_t` with `adc_cali_line_fitting_config_t` and the corresponding initialization function.
+
 ## Original Project
 
 This is a fork of the original [EPDiy project by vroland](https://github.com/vroland/epdiy) with ESP-IDF 5.5.1 compatibility patches.
