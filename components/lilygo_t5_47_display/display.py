@@ -1,6 +1,7 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 import os
+from esphome.core import CORE
 from esphome.components import display
 from esphome.const import (
     CONF_FULL_UPDATE_EVERY,
@@ -36,7 +37,7 @@ CONFIG_SCHEMA = cv.All(
 
 
 async def to_code(config):
-    if "psram" not in cg.CORE.config:
+    if "psram" not in CORE.config:
         raise cv.Invalid("This component requires PSRAM to be enabled. Please add 'psram:' to your configuration.")
 
     var = cg.new_Pvariable(config[CONF_ID])
