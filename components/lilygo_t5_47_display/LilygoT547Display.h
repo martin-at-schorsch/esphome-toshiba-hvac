@@ -30,6 +30,7 @@ class LilygoT547Display : public display::DisplayBuffer {
   void set_power_off_delay_enabled(bool power_off_delay_enabled);
   void set_temperature(uint32_t temperature);
   void set_full_update_every(uint32_t interval);
+  void set_invert_colors(bool invert_colors);
 
   int get_width_internal() override;
 
@@ -56,6 +57,7 @@ class LilygoT547Display : public display::DisplayBuffer {
   bool temperature_;
   bool power_off_delay_enabled_;
   bool landscape_;
+  bool invert_colors_{false};
   uint32_t full_update_every_{30};
 };
 

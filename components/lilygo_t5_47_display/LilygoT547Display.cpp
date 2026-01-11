@@ -19,6 +19,7 @@ void LilygoT547Display::set_landscape(bool landscape) { this->landscape_ = lands
 
 void LilygoT547Display::set_temperature(uint32_t temperature) { this->temperature_ = temperature; }
 void LilygoT547Display::set_full_update_every(uint32_t interval) { this->full_update_every_ = interval; }
+void LilygoT547Display::set_invert_colors(bool invert_colors) { this->invert_colors_ = invert_colors; }
 
 int LilygoT547Display::get_width_internal() { return 960; }
 
@@ -126,11 +127,18 @@ void LilygoT547Display::on_shutdown() {
 
 void HOT LilygoT547Display::draw_absolute_pixel_internal(int x, int y, Color color) {
   if (color.red == 255 && color.green == 255 && color.blue == 255) {
-    epd_draw_pixel(x, y, 255, fb);
+    // White
+    epd_draw_pixel(x, y, this->invert_colors_ ? 0 : 255, fb);
   } else if (color.red == 0 && color.green == 0 && color.blue == 0) {
-    epd_draw_pixel(x, y, 0, fb);
+    // Black
+    epd_draw_pixel(x, y, this->invert_colors_ ? 255 : 0, fb);
   } else {
     int col = (0.2126 * color.red) + (0.7152 * color.green) + (0.0722 * color.blue);
+    
+    if (this->invert_colors_) {
+        col = 255 - col;
+    }
+    
     epd_draw_pixel(x, y, col, fb);
   }
 }

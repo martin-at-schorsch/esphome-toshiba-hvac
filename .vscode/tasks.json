@@ -1,0 +1,195 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "esphome compile",
+            "type": "shell",
+            "command": "docker run --rm -v ${workspaceFolder}/:/config esphome/esphome compile ${relativeFile}",
+            "problemMatcher": [
+                {
+                    "owner": "esphome-yaml-source",
+                    "fileLocation": [
+                        "relative",
+                        "${workspaceFolder}"
+                    ],
+                    "pattern": {
+                        "regexp": "\\[source /config/(.*):(\\d+)\\]",
+                        "file": 1,
+                        "line": 2
+                    }
+                },
+                {
+                    "owner": "esphome-yaml-in",
+                    "fileLocation": [
+                        "relative",
+                        "${workspaceFolder}"
+                    ],
+                    "pattern": {
+                        "regexp": "^\\s*in\\s*\"/config/(.*)\",\\s*line\\s*(\\d+),\\s*column\\s*(\\d+)",
+                        "file": 1,
+                        "line": 2,
+                        "column": 3
+                    }
+                },
+                {
+                    "owner": "cpp",
+                    "fileLocation": [
+                        "relative",
+                        "${workspaceFolder}"
+                    ],
+                    "pattern": {
+                        "regexp": "^/config/(.*):(\\d+):(\\d+):\\s+(error|warning):\\s+(.*)$",
+                        "file": 1,
+                        "line": 2,
+                        "column": 3,
+                        "severity": 4,
+                        "message": 5
+                    }
+                }
+            ]
+        },
+        {
+            "label": "esphome run",
+            "type": "shell",
+            "command": "docker run --rm -v ${workspaceFolder}/:/config esphome/esphome run ${relativeFile}",
+            "problemMatcher": [
+                {
+                    "owner": "esphome-yaml-source",
+                    "fileLocation": [
+                        "relative",
+                        "${workspaceFolder}"
+                    ],
+                    "pattern": {
+                        "regexp": "\\[source /config/(.*):(\\d+)\\]",
+                        "file": 1,
+                        "line": 2
+                    }
+                },
+                {
+                    "owner": "esphome-yaml-in",
+                    "fileLocation": [
+                        "relative",
+                        "${workspaceFolder}"
+                    ],
+                    "pattern": {
+                        "regexp": "^\\s*in\\s*\"/config/(.*)\",\\s*line\\s*(\\d+),\\s*column\\s*(\\d+)",
+                        "file": 1,
+                        "line": 2,
+                        "column": 3
+                    }
+                },
+                {
+                    "owner": "cpp",
+                    "fileLocation": [
+                        "relative",
+                        "${workspaceFolder}"
+                    ],
+                    "pattern": {
+                        "regexp": "^/config/(.*):(\\d+):(\\d+):\\s+(error|warning):\\s+(.*)$",
+                        "file": 1,
+                        "line": 2,
+                        "column": 3,
+                        "severity": 4,
+                        "message": 5
+                    }
+                }
+            ]
+        },
+        {
+            "label": "esphome clean",
+            "type": "shell",
+            "command": "docker run --rm -v ${workspaceFolder}/:/config esphome/esphome clean ${relativeFile}",
+            "problemMatcher": [
+                {
+                    "owner": "esphome-yaml-source",
+                    "fileLocation": [
+                        "relative",
+                        "${workspaceFolder}"
+                    ],
+                    "pattern": {
+                        "regexp": "\\[source /config/(.*):(\\d+)\\]",
+                        "file": 1,
+                        "line": 2
+                    }
+                },
+                {
+                    "owner": "esphome-yaml-in",
+                    "fileLocation": [
+                        "relative",
+                        "${workspaceFolder}"
+                    ],
+                    "pattern": {
+                        "regexp": "^\\s*in\\s*\"/config/(.*)\",\\s*line\\s*(\\d+),\\s*column\\s*(\\d+)",
+                        "file": 1,
+                        "line": 2,
+                        "column": 3
+                    }
+                },
+                {
+                    "owner": "cpp",
+                    "fileLocation": [
+                        "relative",
+                        "${workspaceFolder}"
+                    ],
+                    "pattern": {
+                        "regexp": "^/config/(.*):(\\d+):(\\d+):\\s+(error|warning):\\s+(.*)$",
+                        "file": 1,
+                        "line": 2,
+                        "column": 3,
+                        "severity": 4,
+                        "message": 5
+                    }
+                }
+            ]
+        },
+        {
+            "label": "esphome upload",
+            "type": "shell",
+            "command": "docker run --rm -v ${workspaceFolder}/:/config esphome/esphome upload ${relativeFile}",
+            "problemMatcher": [
+                {
+                    "owner": "esphome-yaml-source",
+                    "fileLocation": [
+                        "relative",
+                        "${workspaceFolder}"
+                    ],
+                    "pattern": {
+                        "regexp": "\\[source /config/(.*):(\\d+)\\]",
+                        "file": 1,
+                        "line": 2
+                    }
+                },
+                {
+                    "owner": "esphome-yaml-in",
+                    "fileLocation": [
+                        "relative",
+                        "${workspaceFolder}"
+                    ],
+                    "pattern": {
+                        "regexp": "^\\s*in\\s*\"/config/(.*)\",\\s*line\\s*(\\d+),\\s*column\\s*(\\d+)",
+                        "file": 1,
+                        "line": 2,
+                        "column": 3
+                    }
+                },
+                {
+                    "owner": "cpp",
+                    "fileLocation": [
+                        "relative",
+                        "${workspaceFolder}"
+                    ],
+                    "pattern": {
+                        "regexp": "^/config/(.*):(\\d+):(\\d+):\\s+(error|warning):\\s+(.*)$",
+                        "file": 1,
+                        "line": 2,
+                        "column": 3,
+                        "severity": 4,
+                        "message": 5
+                    }
+                }
+            ]
+        }
+    ]
+}
