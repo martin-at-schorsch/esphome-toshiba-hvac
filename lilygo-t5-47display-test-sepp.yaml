@@ -35,8 +35,13 @@
 #        type: git
 #        url: https://github.com/vbaksa/esphome
 #        ref: dev
-    - source: github://martin-at-schorsch/esphome-toshiba-hvac  # Ersetze durch dein Repository!
-      components: ["lilygo_t5_47_display", "epdiy"]
+    #- source: github://martin-at-schorsch/esphome-toshiba-hvac  # Ersetze durch dein Repository!
+    #  components: ["lilygo_t5_47_display", "epdiy"]
+    #  refresh: 0s
+    - source:
+        type: local
+        path: components
+      components: [lilygo_t5_47_display, "epdiy"]
   
   wifi:
     ssid: !secret wifi_ssid

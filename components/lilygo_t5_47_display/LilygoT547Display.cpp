@@ -26,13 +26,9 @@ int LilygoT547Display::get_width_internal() { return 960; }
 int LilygoT547Display::get_height_internal() { return 540; }
 
 void LilygoT547Display::setup() {
-  esp_task_wdt_deinit();
-  esp_task_wdt_config_t twdt_config = {
-      .timeout_ms = 30000,
-      .idle_core_mask = 3, // Watch both cores
-      .trigger_panic = true,
-  };
-  esp_task_wdt_init(&twdt_config); // Extend WDT to 30s
+  // WDT reconfiguration removed to prevent abort() on boot (Tasks still subscribed)
+  // Default WDT timeout (usually 5s) should be sufficient for EPD updates.
+  
   ESP_LOGD(TAG, "Initializing EPD...");
 
   if (heap_caps_get_free_size(MALLOC_CAP_SPIRAM) < 100000) {
