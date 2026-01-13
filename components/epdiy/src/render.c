@@ -264,8 +264,10 @@ void epd_renderer_init(enum EpdInitOptions options) {
     }
 
     ESP_LOGI("epd", "Space used for waveform LUT: %dK", lut_size / 1024);
+    // Modified to use SPIRAM to prevent OOM on boot (64KB is too large for internal RAM with WiFi/BT)
+    // Modified to use SPIRAM to prevent OOM on boot (64KB is too large for internal RAM with WiFi/BT)
     render_context.conversion_lut
-        = (uint8_t*)heap_caps_malloc(lut_size, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
+        = (uint8_t*)heap_caps_malloc(lut_size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
     if (render_context.conversion_lut == NULL) {
         ESP_LOGE("epd", "could not allocate LUT!");
         abort();
@@ -282,7 +284,7 @@ void epd_renderer_init(enum EpdInitOptions options) {
     // When using the LCD peripheral, we may need padding lines to
     // satisfy the bounce buffer size requirements
     render_context.line_threads = (uint8_t*)heap_caps_malloc(
-        rounded_display_height(), MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL
+        rounded_display_height(), MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM
     );
 
     int queue_len = 32;
@@ -298,7 +300,7 @@ void epd_renderer_init(enum EpdInitOptions options) {
     }
 
     render_context.line_mask
-        = heap_caps_aligned_alloc(16, epd_width() / 4, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
+        = heap_caps_aligned_alloc(16, epd_width() / 4, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
     assert(render_context.line_mask != NULL);
 
 #ifdef RENDER_METHOD_LCD
@@ -310,13 +312,13 @@ void epd_renderer_init(enum EpdInitOptions options) {
     for (int i = 0; i < NUM_RENDER_THREADS; i++) {
         render_context.line_queues[i] = lq_init(queue_len, queue_elem_size);
         render_context.feed_line_buffers[i] = (uint8_t*)heap_caps_malloc(
-            render_context.display_width, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL
+            render_context.display_width, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM
         );
         assert(render_context.feed_line_buffers[i] != NULL);
         RTOS_ERROR_CHECK(xTaskCreatePinnedToCore(
             render_thread,
             "epd_prep",
-            1 << 12,
+            2560,
             (void*)i,
             configMAX_PRIORITIES - 1,
             &render_context.feed_tasks[i],

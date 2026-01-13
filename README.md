@@ -146,8 +146,16 @@ display:
       it.print(960/2, 540/2, id(font), TextAlign::CENTER, "Hello World!");
 ```
 
-## Important Notes
-*   **PSRAM Required**: This component strictly requires a board with enabled PSRAM (e.g., ESP32-WROVER). If PSRAM is not enabled, the build will fail with an error message to prevent runtime issues.
+## Configuration Variables
+*   `full_update_every` (Optional, default: 30): Performs a full screen refresh (black/white blink) every N updates to clear ghosting. Set to 0 to disable automatic full refreshes.
+*   `invert_colors` (Optional, default: false): Inverts the color logic (White=0, Black=255). Useful if you want compatibility with display components designed for dark backgrounds.
+*   `power_off_delay` (Optional, default: true): Adds a small delay after updates before shutting down power, ensuring stability.
+
+## Important Notes & Troubleshooting
+*   **PSRAM is Mandatory**: This component strictly requires a board with enabled PSRAM (e.g., ESP32-WROVER). The driver is optimized to allocate all large buffers (LUT, Framebuffers, Render Queues) in PSRAM to free up internal RAM for other components (WiFi, MQTT, etc.).
+*   **Complex Projects (OOM)**: If you use many sensors, heavy MQTT, or huge fonts (e.g. >100px), you might still run into Out-Of-Memory issues on the internal heap during boot. 
+    *   **Recommendation**: Reduce font sizes or the number of components if boot crashes occur.
+    *   **Optimization**: The driver automatically uses a smaller render queue (`EPD_FEED_QUEUE_8`) to save memory.
 *   **ESP-IDF Version**: Tested and functional with newer ESPHome versions (from 2024.x) that use ESP-IDF 5.x.
 *   **Color Handling**: This component treats **White as 255** and **Black as 0**.
     *   Many ESPHome display components (like OLEDs) assume a black background (0) by default.

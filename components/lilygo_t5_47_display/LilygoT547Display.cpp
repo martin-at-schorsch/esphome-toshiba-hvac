@@ -32,9 +32,11 @@ void LilygoT547Display::setup() {
   ESP_LOGD(TAG, "Initializing EPD...");
 
   if (heap_caps_get_free_size(MALLOC_CAP_SPIRAM) < 100000) {
-      ESP_LOGE(TAG, "Not enough PSRAM for EPD! Free: %d", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+      ESP_LOGE(TAG, "Not enough PSRAM for EPD! Free: %d. Aborting EPD init.", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+      return;
   }
-  epd_init(&epd_board_lilygo_t5_47, &ED047TC1, EPD_OPTIONS_DEFAULT);
+  epd_init(&epd_board_lilygo_t5_47, &ED047TC1, (EpdInitOptions)(EPD_LUT_64K | EPD_FEED_QUEUE_8));
+  
   hl = epd_hl_init(WAVEFORM);
   
   if (hl.front_fb == NULL || hl.back_fb == NULL) {
@@ -87,28 +89,26 @@ void LilygoT547Display::clear() {
 }
 
 void LilygoT547Display::flush_screen_changes() {
-  // Check if FB has content
-  if (fb != NULL) {
-      bool occupied = false;
-      for (int i = 0; i < 960 * 540 / 2; i++) { // Check first half
-          if (fb[i] != 0xFF) { // Assuming 0xFF is White (Empty). Any non-0xFF is content.
-             occupied = true;
-             break;
-          }
-      }
-      ESP_LOGD(TAG, "Framebuffer status before flush: %s. First byte: 0x%02X", occupied ? "Has Content" : "Empty/Uniform (All White)", fb[0]);
-  } else {
-      ESP_LOGE(TAG, "Framebuffer is NULL!");
-  }
-
   epd_poweron();
   delay(50); // Ensure PMIC ready
   err = epd_hl_update_screen(&hl, MODE_GL16, this->temperature_);
-  ESP_LOGI(TAG, "Update finished. Err: %d", err);
+  
+  if (err != 0) {
+      ESP_LOGW(TAG, "Update failed with error code: %d", err);
+  }
+  
   if (this->power_off_delay_enabled_ == true) {
     delay(700);
   }
   epd_poweroff();
+}
+
+void LilygoT547Display::dump_config() {
+    ESP_LOGCONFIG(TAG, "Lilygo T5-4.7 Display:");
+    ESP_LOGCONFIG(TAG, "  Rotation: %d", this->landscape_ ? 90 : 0);
+    ESP_LOGCONFIG(TAG, "  Full Update Every: %u", this->full_update_every_);
+    ESP_LOGCONFIG(TAG, "  Power Off Delay: %s", this->power_off_delay_enabled_ ? "YES" : "NO");
+    ESP_LOGCONFIG(TAG, "  Invert Colors: %s", this->invert_colors_ ? "YES" : "NO");
 }
 
 void LilygoT547Display::set_all_white() { epd_hl_set_all_white(&hl); }
